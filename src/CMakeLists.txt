@@ -10,7 +10,9 @@ set(CMAKE_AUTOUIC ON) # UI files
 # find package
 find_package(Qt5 REQUIRED Widgets)
 find_package(PCL 1.7.1 REQUIRED)
+find_package(VTK REQUIRED)
 
+include_directories(${CMAKE_SOURCE_DIR}/core/include) #3DRPCore
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -33,6 +35,8 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
+    3DRPCore #3DRPCore
     ${PCL_LIBRARIES}
+    ${VTK_LIBRARIES}
     Qt5::Widgets
 )

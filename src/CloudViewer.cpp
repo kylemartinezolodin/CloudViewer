@@ -1,4 +1,5 @@
 #include "CloudViewer.h"
+#include "preprocessing.h"
 
 CloudViewer::CloudViewer(QWidget *parent)
 	: QMainWindow(parent) {
@@ -66,6 +67,10 @@ CloudViewer::CloudViewer(QWidget *parent)
 	connect(ui.dataTree, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(popMenu(const QPoint&)));
 
 	connect(ui.consoleTable, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(popMenuInConsole(const QPoint&)));
+
+	// 3DRP Preprocessing
+	QObject::connect(ui.asdAction, &QAction::triggered, this, &CloudViewer::do_something);
+
 	// Initialization
 	initial();
 }
@@ -1072,4 +1077,11 @@ int CloudViewer::convertWireframe() {
 
 void CloudViewer::debug(const string& s) {
 	QMessageBox::information(this, tr("Debug"), QString::fromLocal8Bit(s.c_str()));
+}
+
+// 3DRP Preprocessing
+void CloudViewer::do_something() {
+	// code here
+	consoleLog("asd", "", QString::fromStdString(_3DRPCore::Preprocessing::print_something()), "");
+	
 }

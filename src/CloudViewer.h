@@ -178,6 +178,9 @@ public slots:
 	void disableConsole();
 
 	void debug(const string& s);
+
+	// 3DRP Preprocessing
+	void do_something();
 };
 
 #endif // CLOUDVIEWER_H

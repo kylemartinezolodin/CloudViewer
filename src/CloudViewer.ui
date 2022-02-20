@@ -162,8 +162,15 @@
     <property name="title">
      <string>Process</string>
     </property>
+    <widget class="QMenu" name="menuPreprocessing">
+     <property name="title">
+      <string>Preprocessing</string>
+     </property>
+     <addaction name="asdAction"/>
+    </widget>
     <addaction name="meshsurfaceAction"/>
     <addaction name="wireframeAction"/>
+    <addaction name="menuPreprocessing"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -567,7 +574,7 @@
    <property name="minimumSize">
     <size>
      <width>250</width>
-     <height>233</height>
+     <height>235</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -621,7 +628,7 @@
    <property name="minimumSize">
     <size>
      <width>250</width>
-     <height>233</height>
+     <height>235</height>
     </size>
    </property>
    <property name="font">
@@ -648,6 +655,7 @@
        </property>
        <property name="font">
         <font>
+         <family>微软雅黑</family>
          <pointsize>9</pointsize>
         </font>
        </property>
@@ -708,14 +716,14 @@
        <attribute name="horizontalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>25</number>
+       </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
         <number>100</number>
        </attribute>
        <attribute name="horizontalHeaderHighlightSections">
         <bool>true</bool>
-       </attribute>
-       <attribute name="horizontalHeaderMinimumSectionSize">
-        <number>25</number>
        </attribute>
        <attribute name="horizontalHeaderStretchLastSection">
         <bool>true</bool>
@@ -1121,6 +1129,11 @@
   <action name="actionRotate90">
    <property name="text">
     <string>Rotate90</string>
+   </property>
+  </action>
+  <action name="asdAction">
+   <property name="text">
+    <string>asd</string>
    </property>
   </action>
  </widget>

@@ -25,17 +25,17 @@ void MyCloud::init(const QFileInfo& fileInfo, bool hasCloudParam, bool hasMeshPa
 	}
 
 	isValid = true;
+	if (hasCloud) {
+		cloudId = "cloud-" + fileName;
+		setPointAlpha(255);
+		supportedModes = { "point" };
+	}
 	if (hasMesh) {
 		meshId = "mesh-" + fileName;
 		cloudId = "cloud-" + fileName;
 		pcl::fromPCLPointCloud2(mesh->cloud, *cloud);
 		setPointAlpha(255);
 		supportedModes = {"point", "mesh", "point+mesh"};
-	}
-	if (hasCloud) {
-		cloudId = "cloud-" + fileName;
-		setPointAlpha(255);
-		supportedModes = {"point"};
 	}
 
 	// default show node

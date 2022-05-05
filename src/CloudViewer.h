@@ -178,9 +178,16 @@ public slots:
 	void disableConsole();
 
 	void debug(const string& s);
+	
+	// Custom UI
+	void displaymode();
+	void displaymode_point();
 
 	// 3DRP Preprocessing
 	void do_something();
+
+	// 3DRP Reconstruction
+	void poissonReconstruction();
 };
 
 #endif // CLOUDVIEWER_H

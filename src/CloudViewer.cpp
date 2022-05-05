@@ -1,5 +1,6 @@
 #include "CloudViewer.h"
 #include "preprocessing.h"
+#include "reconstruction.h"
 
 CloudViewer::CloudViewer(QWidget *parent)
 	: QMainWindow(parent) {
@@ -68,8 +69,16 @@ CloudViewer::CloudViewer(QWidget *parent)
 
 	connect(ui.consoleTable, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(popMenuInConsole(const QPoint&)));
 
+	// Custom UI
+	QObject::connect(ui.actionPoint, &QAction::triggered, this, &CloudViewer::displaymode);
+	QObject::connect(ui.actionMesh, &QAction::triggered, this, &CloudViewer::displaymode);
+	QObject::connect(ui.actionFaces, &QAction::triggered, this, &CloudViewer::displaymode);
+
 	// 3DRP Preprocessing
 	QObject::connect(ui.asdAction, &QAction::triggered, this, &CloudViewer::do_something);
+
+	// 3DRP Reconstruction
+	QObject::connect(ui.actionPoisson, &QAction::triggered, this, &CloudViewer::poissonReconstruction);
 
 	// Initialization
 	initial();
@@ -1079,9 +1088,55 @@ void CloudViewer::debug(const string& s) {
 	QMessageBox::information(this, tr("Debug"), QString::fromLocal8Bit(s.c_str()));
 }
 
+// Custom UI
+void CloudViewer::displaymode_point() {
+	CloudViewer::viewer->setPointCloudRenderingProperties(
+		pcl::visualization::RenderingProperties::PCL_VISUALIZER_REPRESENTATION, // PARAMETER
+		pcl::visualization::RenderingRepresentationProperties::PCL_VISUALIZER_REPRESENTATION_POINTS, // VALUE
+		mycloud.meshId // MESH ID
+	);
+}
+
+void CloudViewer::displaymode() {
+	CloudViewer::viewer->setPointCloudRenderingProperties(
+		pcl::visualization::RenderingProperties::PCL_VISUALIZER_REPRESENTATION, // PARAMETER
+		pcl::visualization::RenderingRepresentationProperties::PCL_VISUALIZER_REPRESENTATION_POINTS, // VALUE
+		mycloud.meshId // MESH ID
+	);
+}
+
 // 3DRP Preprocessing
 void CloudViewer::do_something() {
 	// code here
-	consoleLog("asd", "", QString::fromStdString(_3DRPCore::Preprocessing::print_something()), "");
+	consoleLog("asd", "", QString::fromStdString(_3DRPCore::Reconstruction::print_something()), "");
 	
+}
+
+// 3DRP Reconstruction
+void CloudViewer::poissonReconstruction() {
+	//consoleLog("poisson", "", QString::fromStdString(_3DRPCore::Reconstruction::print_something()), "");
+
+	pcl::PointXYZ point;
+	xyzCloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+	for (size_t i = 0; i < mycloud.cloud->size(); i++) {
+		point.x = mycloud.cloud->points[i].x;
+		point.y = mycloud.cloud->points[i].y;
+		point.z = mycloud.cloud->points[i].z;
+		xyzCloud->push_back(point);
+	}
+	if (!xyzCloud) {
+		consoleLog("Error", "", "", "");
+	}
+
+	pcl::PolygonMesh mesh = _3DRPCore::Reconstruction::poisson(xyzCloud);
+
+	viewer->addPolygonMesh(mesh, "mesh-greedy-projection");
+	viewer->setRepresentationToSurfaceForAllActors();
+
+	consoleLog("Convert surface", "", "", "");
+
+	viewer->removeAllShapes();
+	while (!viewer->wasStopped()) {
+		viewer->spinOnce(100);
+	}
 }

@@ -139,8 +139,17 @@
      <addaction name="englishAction"/>
      <addaction name="chineseAction"/>
     </widget>
+    <widget class="QMenu" name="menuDisplay_Mode">
+     <property name="title">
+      <string>Display Mode</string>
+     </property>
+     <addaction name="actionPoint"/>
+     <addaction name="actionMesh"/>
+     <addaction name="actionFaces"/>
+    </widget>
     <addaction name="themeAction"/>
     <addaction name="langAction"/>
+    <addaction name="menuDisplay_Mode"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -168,9 +177,16 @@
      </property>
      <addaction name="asdAction"/>
     </widget>
+    <widget class="QMenu" name="menuReconstruction">
+     <property name="title">
+      <string>Reconstruction</string>
+     </property>
+     <addaction name="actionPoisson"/>
+    </widget>
     <addaction name="meshsurfaceAction"/>
     <addaction name="wireframeAction"/>
     <addaction name="menuPreprocessing"/>
+    <addaction name="menuReconstruction"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -1134,6 +1150,43 @@
   <action name="asdAction">
    <property name="text">
     <string>asd</string>
+   </property>
+  </action>
+  <action name="actionPoisson">
+   <property name="text">
+    <string>Poisson</string>
+   </property>
+  </action>
+  <action name="actionPoint">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Point</string>
+   </property>
+  </action>
+  <action name="actionMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Wireframe</string>
+   </property>
+  </action>
+  <action name="actionPoint_Polygon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Point + Polygon</string>
+   </property>
+  </action>
+  <action name="actionFaces">
+   <property name="text">
+    <string>Faces</string>
    </property>
   </action>
  </widget>

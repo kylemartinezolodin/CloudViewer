@@ -2,6 +2,8 @@
 #include "preprocessing.h"
 #include "reconstruction.h"
 
+#include <iostream>
+
 CloudViewer::CloudViewer(QWidget *parent)
 	: QMainWindow(parent) {
 	ui.setupUi(this);
@@ -136,22 +138,49 @@ void CloudViewer::doOpen(const QStringList& filePathList) {
 
 // Open point cloud
 void CloudViewer::open() {
-	QStringList filePathList = QFileDialog::getOpenFileNames(
+	QString file = QFileDialog::getOpenFileName(
 		this,
-		tr("Open point cloud file"),
-		toQString(mycloud.fileDir),
+		tr("Open file"),
+		toQString("./"),
 		toQString(fileIO.getInputFormatsStr())
 	);
-	if (filePathList.isEmpty()) return;
+	if (file == NULL) return;
 
 	// Clear cache
 	// TODO: abstract a function
-	mycloud_vec.clear();
-	total_points = 0;
-	ui.dataTree->clear();
-	viewer->removeAllPointClouds();
+	//mycloud_vec.clear();
+	//total_points = 0;
+	//ui.dataTree->clear();
+	//viewer->removeAllPointClouds();
 
-	doOpen(filePathList);
+
+	polyData = _3DRPHelpers::ReadPolyData(file.toStdString().c_str());
+
+	//if (!_3DRPHelpers::ReadPolyData(file.toStdString().c_str(), polyData)) {
+	//	std::string message = "buta";
+	//	std::cerr << message; // some code when file is invalid
+	//}
+
+	std::cerr << "Points: " << polyData->GetNumberOfPoints() << std::endl;
+	std::cerr << "Vertices: " << polyData->GetNumberOfVerts() << std::endl;
+	std::cerr << "Polygons: " << polyData->GetNumberOfPolys() << std::endl;
+
+	viewer->removeAllPointClouds();
+	viewer->removeAllShapes();
+	viewer->resetCamera();
+	ui.screen->update();
+
+	if(polyData->GetNumberOfPolys() != 0)
+		viewer->addModelFromPolyData(polyData);
+	else if (polyData->GetNumberOfPoints() != 0) {
+		QFileInfo fileInfo(file);
+		mycloud = fileIO.load(fileInfo);
+		mycloud.setPointColor(175, 127, 39);
+		mycloud.viewer = viewer;
+		viewer->addPointCloud(mycloud.cloud);
+	}
+
+	//doOpen(filePathList);
 }
 
 // Add Point Cloud

@@ -38,11 +38,11 @@ public:
 
     map<string, string> inputFiltersMap = {
         {"ply", "Stanford Polygon File Format (*.ply)"},
-        {"pcd", "PCL Point Cloud Data (*.pcd)"},
+        //{"pcd", "PCL Point Cloud Data (*.pcd)"},
         {"obj", "Alias Wavefront Object (*.obj)"},
-        {"stl", "STL File Format (*.stl)"},
-        {"vtk", "Visualization Tookit Format (*.vtk)"},
-        {"*", "All Files (*.*)"}
+        //{"stl", "STL File Format (*.stl)"},
+        //{"vtk", "Visualization Tookit Format (*.vtk)"},
+        //{"*", "All Files (*.*)"}
     };
 
     map<string, string> outputFiltersMap = {

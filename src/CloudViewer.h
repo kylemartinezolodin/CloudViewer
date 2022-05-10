@@ -27,6 +27,7 @@
 #include "Tools.h"
 #include "MeshProcessing.h"
 #include "FileIO.h"
+#include "helpers.h"
 
 #include <vector>
 #include <map>
@@ -85,6 +86,7 @@ private:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud;
 	MyCloud mycloud;
 	std::vector<MyCloud> mycloud_vec;
+	vtkSmartPointer<vtkPolyData> polyData;
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 
 	FileIO fileIO;

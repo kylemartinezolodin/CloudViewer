@@ -6,6 +6,7 @@ project(CloudViewer)
 set(CMAKE_AUTOMOC ON) # for meta object compiler
 set(CMAKE_AUTORCC ON) # resource files
 set(CMAKE_AUTOUIC ON) # UI files
+set(DCMAKE_BUILD_TYPE "Debug")
 
 # find package
 find_package(Qt5 REQUIRED Widgets)

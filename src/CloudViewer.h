@@ -168,7 +168,7 @@ public slots:
 
 	/***** Slots of dataTree(QTreeWidget) widget *****/
 	// Item in dataTree is left-clicked
-	void itemSelected(QTreeWidgetItem*, int);
+	// void itemSelected(QTreeWidgetItem*, int);
 	// Item in dataTree is right-clicked
 	void popMenu(const QPoint&);
 	void hideItem();

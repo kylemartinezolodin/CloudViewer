@@ -1,3 +1,18 @@
+// reconstruction include
+#include <CGAL/compute_average_spacing.h> // for  CGAL::compute_average_spacing<CGAL()
+#include <CGAL/poisson_surface_reconstruction.h> // for CGAL::poisson_surface_reconstruction_delaunay
+
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
+
+#include <CGAL/IO/read_points.h> // for points
+typedef Kernel::Point_3 Point;
+typedef Kernel::Vector_3 Vector;
+typedef std::pair<Point, Vector> Pwn;
+
+#include <CGAL/boost/graph/IO/polygon_mesh_io.h> // for CGAL::IO::write_polygon_mesh()
+
+// base include
 #include "CloudViewer.h"
 #include "preprocessing.h"
 #include "reconstruction.h"
@@ -145,6 +160,7 @@ void CloudViewer::open() {
 		toQString(fileIO.getInputFormatsStr())
 	);
 	if (file == NULL) return;
+	objFilename = file.toStdString();
 
 	// Clear cache
 	// TODO: abstract a function
@@ -153,31 +169,38 @@ void CloudViewer::open() {
 	//ui.dataTree->clear();
 	//viewer->removeAllPointClouds();
 
+	resetViewer();
 
-	polyData = _3DRPHelpers::ReadPolyData(file.toStdString().c_str());
+	inputPolyData = _3DRPHelpers::ReadPolyData(file.toStdString().c_str());
 
 	//if (!_3DRPHelpers::ReadPolyData(file.toStdString().c_str(), polyData)) {
 	//	std::string message = "buta";
 	//	std::cerr << message; // some code when file is invalid
 	//}
 
-	std::cerr << "Points: " << polyData->GetNumberOfPoints() << std::endl;
-	std::cerr << "Vertices: " << polyData->GetNumberOfVerts() << std::endl;
-	std::cerr << "Polygons: " << polyData->GetNumberOfPolys() << std::endl;
+	std::cerr << "Points: " << inputPolyData->GetNumberOfPoints() << std::endl;
+	std::cerr << "Vertices: " << inputPolyData->GetNumberOfVerts() << std::endl;
+	std::cerr << "Polygons: " << inputPolyData->GetNumberOfPolys() << std::endl;
 
-	viewer->removeAllPointClouds();
-	viewer->removeAllShapes();
-	viewer->resetCamera();
-	ui.screen->update();
+	//viewer->removeAllPointClouds();
+	//viewer->removeAllShapes();
+	//viewer->resetCamera();
+	//ui.screen->update();
 
-	if(polyData->GetNumberOfPolys() != 0)
-		viewer->addModelFromPolyData(polyData);
-	else if (polyData->GetNumberOfPoints() != 0) {
-		QFileInfo fileInfo(file);
-		mycloud = fileIO.load(fileInfo);
-		mycloud.setPointColor(175, 127, 39);
-		mycloud.viewer = viewer;
-		viewer->addPointCloud(mycloud.cloud);
+	if (inputPolyData->GetNumberOfPolys() != 0)
+		viewer->addModelFromPolyData(inputPolyData);
+	else if (inputPolyData->GetNumberOfPoints() != 0) {
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+		pcl::io::vtkPolyDataToPointCloud(inputPolyData.GetPointer(), *cloud);
+		// QFileInfo fileInfo(file);
+		// mycloud = fileIO.load(fileInfo);
+		// mycloud.setPointColor(175, 127, 39);
+		// mycloud.viewer = viewer;
+		//_3DRPHelpers::setPointColor(cloud, 175, 127, 39);
+		viewer->addPointCloud(cloud);
+		viewer->updatePointCloud(cloud);
+		viewer->resetCamera();
+		ui.screen->update();
 	}
 
 	//doOpen(filePathList);
@@ -215,6 +238,17 @@ void CloudViewer::clear() {
 	showPointcloud();  //更新显示
 }
 
+void CloudViewer::resetViewer() {
+	viewer->removeAllPointClouds();
+	viewer->removeAllShapes();
+	viewer->resetCamera();
+	ui.screen->update();
+
+	//输出窗口
+	consoleLog("Clear", "All point clouds", "", "");
+
+	setWindowTitle("CloudViewer");  //更新窗口标题
+}
 // Save point cloud
 void CloudViewer::save() {
 	if (!mycloud.isValid) {
@@ -1143,29 +1177,86 @@ void CloudViewer::do_something() {
 
 // 3DRP Reconstruction
 void CloudViewer::poissonReconstruction() {
-	//consoleLog("poisson", "", QString::fromStdString(_3DRPCore::Reconstruction::print_something()), "");
+	std::string extension = objFilename.substr(objFilename.find_last_of('.'));
+	if (extension == ".ply" || extension == ".PLY")
+	{
+		std::vector<Pwn> points;
+		// read_points() supports .off .ply. xyz
+		if (CGAL::IO::read_points(objFilename,
+			std::back_inserter(points),
+			CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>())
+			.normal_map(CGAL::Second_of_pair_property_map<Pwn>())))
+		{
+			std::cerr << "Sucess: can read file " << objFilename << std::endl;
 
-	pcl::PointXYZ point;
-	xyzCloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-	for (size_t i = 0; i < mycloud.cloud->size(); i++) {
-		point.x = mycloud.cloud->points[i].x;
-		point.y = mycloud.cloud->points[i].y;
-		point.z = mycloud.cloud->points[i].z;
-		xyzCloud->push_back(point);
+			Polyhedron output_mesh;
+
+			double average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
+				(points, 6, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
+
+			if (CGAL::poisson_surface_reconstruction_delaunay
+			(points.begin(), points.end(),
+				CGAL::First_of_pair_property_map<Pwn>(),
+				CGAL::Second_of_pair_property_map<Pwn>(),
+				output_mesh, average_spacing))
+			{
+				if (CGAL::IO::write_polygon_mesh("temp.obj", output_mesh)) {
+					poissonPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+					resetViewer();
+					viewer->addModelFromPolyData(poissonPolyData);
+				}
+				else
+					std::cerr << "Error: cannot write file " << objFilename << std::endl;
+			}
+
+		}
+		else
+			std::cerr << "Error: cannot read file " << objFilename << std::endl;
+
+
+		// Reads the mesh file in a polyhedron
+		//std::ifstream stream(objFilename.c_str());
+		//Polyhedron input_mesh;
+		//CGAL::scan_OFF(stream, input_mesh, true /* verbose */);
+		//if (!stream || !input_mesh.is_valid() || input_mesh.empty())
+		//{
+		//	std::cerr << "Error: cannot read file " << objFilename << std::endl;
+		//	return EXIT_FAILURE;
+		//}
+
+
+
+		// Converts Polyhedron vertices to point set.
+		// Computes vertices normal from connectivity.
+		//for (boost::graph_traits<Polyhedron>::vertex_descriptor v :
+		//vertices(input_mesh)) {
+		//	const Point& p = v->point();
+		//	Vector n = CGAL::Polygon_mesh_processing::compute_vertex_normal(v, input_mesh);
+		//	points.push_back(std::make_pair(p, n));
+		//}
 	}
-	if (!xyzCloud) {
-		consoleLog("Error", "", "", "");
-	}
+}
 
-	pcl::PolygonMesh mesh = _3DRPCore::Reconstruction::poisson(xyzCloud);
+void CloudViewer::scaleReconstruction() {
 
-	viewer->addPolygonMesh(mesh, "mesh-greedy-projection");
-	viewer->setRepresentationToSurfaceForAllActors();
+	std::string extension = objFilename.substr(objFilename.find_last_of('.'));
+	if (extension == ".ply" || extension == ".PLY")
+	{
+		//Point_set points;
+		//if (CGAL::IO::read_point_set(objFilename, points))
+		//{
+		//	std::cerr << "Sucess: can read file " << objFilename << std::endl;
 
-	consoleLog("Convert surface", "", "", "");
+		//	_3DRPCore::Reconstruction::scaleSpace(points);
 
-	viewer->removeAllShapes();
-	while (!viewer->wasStopped()) {
-		viewer->spinOnce(100);
+		//	_3DRPHelpers::offConvertToObj("temp.off");
+
+		//	scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+		//	resetViewer();
+		//	viewer->addModelFromPolyData(scalePolyData);
+
+		//}
+		//else
+		//	std::cerr << "Error: cannot read file " << objFilename << std::endl;
 	}
 }

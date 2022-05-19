@@ -86,7 +86,10 @@ private:
 	pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud;
 	MyCloud mycloud;
 	std::vector<MyCloud> mycloud_vec;
-	vtkSmartPointer<vtkPolyData> polyData;
+	vtkSmartPointer<vtkPolyData> inputPolyData;
+	vtkSmartPointer<vtkPolyData> poissonPolyData;
+	vtkSmartPointer<vtkPolyData> scalePolyData;
+	std::string objFilename;
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 
 	FileIO fileIO;
@@ -113,6 +116,7 @@ private:
 	void add();
 	void doOpen(const QStringList& filePathList);
 	void clear();
+	void resetViewer();
 	
 	void savemulti(const QFileInfo& fileInfo, bool isSaveBinary);
 	void exit();
@@ -190,6 +194,7 @@ public slots:
 
 	// 3DRP Reconstruction
 	void poissonReconstruction();
+	void scaleReconstruction();
 };
 
 #endif // CLOUDVIEWER_H

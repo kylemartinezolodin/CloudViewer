@@ -5,12 +5,17 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 
+// for poisson
 #include <CGAL/IO/read_points.h> // for points
 typedef Kernel::Point_3 Point;
 typedef Kernel::Vector_3 Vector;
 typedef std::pair<Point, Vector> Pwn;
 
 #include <CGAL/boost/graph/IO/polygon_mesh_io.h> // for CGAL::IO::write_polygon_mesh()
+
+// for scalespace
+#include <CGAL/Point_set_3.h>
+typedef CGAL::Point_set_3<Point> Point_set;
 
 // base include
 #include "CloudViewer.h"
@@ -96,6 +101,7 @@ CloudViewer::CloudViewer(QWidget *parent)
 
 	// 3DRP Reconstruction
 	QObject::connect(ui.actionPoisson, &QAction::triggered, this, &CloudViewer::poissonReconstruction);
+	QObject::connect(ui.actionScale_Space, &QAction::triggered, this, &CloudViewer::scaleReconstruction);
 
 	// Initialization
 	initial();
@@ -196,7 +202,7 @@ void CloudViewer::open() {
 		// mycloud = fileIO.load(fileInfo);
 		// mycloud.setPointColor(175, 127, 39);
 		// mycloud.viewer = viewer;
-		//_3DRPHelpers::setPointColor(cloud, 175, 127, 39);
+		_3DRPHelpers::setPointColor(cloud, 175, 127, 39);
 		viewer->addPointCloud(cloud);
 		viewer->updatePointCloud(cloud);
 		viewer->resetCamera();
@@ -1213,27 +1219,6 @@ void CloudViewer::poissonReconstruction() {
 		else
 			std::cerr << "Error: cannot read file " << objFilename << std::endl;
 
-
-		// Reads the mesh file in a polyhedron
-		//std::ifstream stream(objFilename.c_str());
-		//Polyhedron input_mesh;
-		//CGAL::scan_OFF(stream, input_mesh, true /* verbose */);
-		//if (!stream || !input_mesh.is_valid() || input_mesh.empty())
-		//{
-		//	std::cerr << "Error: cannot read file " << objFilename << std::endl;
-		//	return EXIT_FAILURE;
-		//}
-
-
-
-		// Converts Polyhedron vertices to point set.
-		// Computes vertices normal from connectivity.
-		//for (boost::graph_traits<Polyhedron>::vertex_descriptor v :
-		//vertices(input_mesh)) {
-		//	const Point& p = v->point();
-		//	Vector n = CGAL::Polygon_mesh_processing::compute_vertex_normal(v, input_mesh);
-		//	points.push_back(std::make_pair(p, n));
-		//}
 	}
 }
 
@@ -1242,21 +1227,21 @@ void CloudViewer::scaleReconstruction() {
 	std::string extension = objFilename.substr(objFilename.find_last_of('.'));
 	if (extension == ".ply" || extension == ".PLY")
 	{
-		//Point_set points;
-		//if (CGAL::IO::read_point_set(objFilename, points))
-		//{
-		//	std::cerr << "Sucess: can read file " << objFilename << std::endl;
+		Point_set points;
+		if (CGAL::IO::read_point_set(objFilename, points))
+		{
+			std::cerr << "Sucess: can read file " << objFilename << std::endl;
 
-		//	_3DRPCore::Reconstruction::scaleSpace(points);
+			_3DRPCore::Reconstruction::scaleSpace(points);
 
-		//	_3DRPHelpers::offConvertToObj("temp.off");
+			_3DRPHelpers::offConvertToObj("temp.off");
 
-		//	scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
-		//	resetViewer();
-		//	viewer->addModelFromPolyData(scalePolyData);
+			scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+			resetViewer();
+			viewer->addModelFromPolyData(scalePolyData);
 
-		//}
-		//else
-		//	std::cerr << "Error: cannot read file " << objFilename << std::endl;
+		}
+		else
+			std::cerr << "Error: cannot read file " << objFilename << std::endl;
 	}
 }

@@ -85,12 +85,37 @@ MyCloud FileIO::load(const QFileInfo& fileInfo) {
     }
 }
 
+
+bool FileIO::save(pcl::PolygonMesh::Ptr mesh, const std::string filePath, bool isBinaryFormat) {
+    std::string suffix = filePath.substr(filePath.find_last_of('.'));
+    if (suffix == "ply") {
+        return pcl::io::savePLYFile(filePath, *mesh, isBinaryFormat);
+    }
+    else if (suffix == "obj") {
+        return pcl::io::saveOBJFile(filePath, *mesh);
+    }
+    //else if (suffix == "pcd") {
+    //    return pcl::io::savePCDFile(filePath, *cloud, isBinaryFormat);
+    //}
+    else if (suffix == "stl") {
+        return pcl::io::savePolygonFileSTL(filePath, *mesh, isBinaryFormat);
+    }
+    else if (suffix == "vtk") {
+        return pcl::io::savePolygonFileVTK(filePath, *mesh, isBinaryFormat);
+    }
+    else {
+        return false;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool FileIO::savePLY(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBinaryFormat) {
     if (!myCloud.isValid) return false;
     string filePath = fromQString(fileInfo.filePath());
     if (myCloud.hasMesh) {
         return pcl::io::savePolygonFilePLY(filePath, *myCloud.mesh, isBinaryFormat);
-    } else {
+    }
+    else {
         int status = pcl::io::savePLYFile(filePath, *myCloud.cloud, isBinaryFormat);
         return status == 0;
     }
@@ -128,18 +153,24 @@ bool FileIO::save(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBina
     string suffix = fromQString(fileInfo.suffix().toLower());
     if (suffix == "ply") {
         return savePLY(myCloud, fileInfo, isBinaryFormat);
-    } else if (suffix == "obj") {
+    }
+    else if (suffix == "obj") {
         return saveOBJ(myCloud, fileInfo);
-    } else if (suffix == "pcd") {
+    }
+    else if (suffix == "pcd") {
         return savePCD(myCloud, fileInfo, isBinaryFormat);
-    } else if (suffix == "stl") {
+    }
+    else if (suffix == "stl") {
         return saveSTL(myCloud, fileInfo, isBinaryFormat);
-    } else if (suffix == "vtk") {
+    }
+    else if (suffix == "vtk") {
         return saveVTK(myCloud, fileInfo, isBinaryFormat);
-    } else {
+    }
+    else {
         return false;
     }
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 string FileIO::getInputFormatsStr() const {
     vector<string> suffixVec;

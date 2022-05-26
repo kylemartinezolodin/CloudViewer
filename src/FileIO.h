@@ -12,6 +12,11 @@
 #include <map>
 #include "MyCloud.h"
 
+
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/PolygonMesh.h>
+
 using std::vector;
 using std::string;
 using std::map;
@@ -33,6 +38,8 @@ public:
     bool saveSTL(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBinaryFormat);
     bool saveVTK(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBinaryFormat);
 
+    bool save(pcl::PolygonMesh::Ptr mesh, const std::string filePath, bool isBinaryFormat);
+
     string getInputFormatsStr() const;
     string getOutputFormatsStr() const;
 
@@ -47,7 +54,7 @@ public:
 
     map<string, string> outputFiltersMap = {
         {"ply", "Stanford Polygon File Format (*.ply)"},
-        {"pcd", "PCL Point Cloud Data (*.pcd)"},
+        //{"pcd", "PCL Point Cloud Data (*.pcd)"},
         {"obj", "Alias Wavefront Object (*.obj)"},
         {"stl", "STL File Format (*.stl)"},
         {"vtk", "Visualization Tookit Format (*.vtk)"},

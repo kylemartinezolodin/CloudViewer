@@ -103,9 +103,18 @@
      </property>
      <addaction name="actionPoisson"/>
      <addaction name="actionScale_Space"/>
+     <addaction name="actionAdv_Face_Front"/>
+    </widget>
+    <widget class="QMenu" name="menuPostprocessing">
+     <property name="title">
+      <string>Postprocessing</string>
+     </property>
+     <addaction name="actionBoolean_Union"/>
+     <addaction name="actionHole_Filling"/>
     </widget>
     <addaction name="menuPreprocessing"/>
     <addaction name="menuReconstruction"/>
+    <addaction name="menuPostprocessing"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -445,6 +454,21 @@
   <action name="actionScale_Space">
    <property name="text">
     <string>Scale Space</string>
+   </property>
+  </action>
+  <action name="actionAdv_Face_Front">
+   <property name="text">
+    <string>Adv. Face Front</string>
+   </property>
+  </action>
+  <action name="actionBoolean_Union">
+   <property name="text">
+    <string>Boolean: Union</string>
+   </property>
+  </action>
+  <action name="actionHole_Filling">
+   <property name="text">
+    <string>Hole Filling</string>
    </property>
   </action>
  </widget>

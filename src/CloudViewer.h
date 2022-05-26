@@ -72,6 +72,9 @@ using std::vector;
 using std::string;
 using std::map;
 
+enum viewerObjectType{NONE, POINT_CLOUD, POLYGON};
+enum viewerObjectSource { OPENED_FILE, POISSON, SCALE_SPACE, ADVANCING_FRONT};
+
 class CloudViewer : public QMainWindow
 {
 	Q_OBJECT
@@ -84,15 +87,19 @@ private:
 	Ui::CloudViewerClass ui;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloudXYZRGB;
 	MyCloud mycloud;
 	std::vector<MyCloud> mycloud_vec;
 	vtkSmartPointer<vtkPolyData> inputPolyData;
 	vtkSmartPointer<vtkPolyData> poissonPolyData;
 	vtkSmartPointer<vtkPolyData> scalePolyData;
+	vtkSmartPointer<vtkPolyData> advPolyData;
 	std::string objFilename;
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 
 	FileIO fileIO;
+	viewerObjectType objectIsCurrently; // used to flag what is currently the type of the object inside the viewer
+	viewerObjectSource objectIsFrom; // flags source of the object inside the viewer; imported, from poisson, from scale space ....
 
 	QString save_filename;
 	long total_points = 0; //Total amount of points in the viewer
@@ -195,6 +202,11 @@ public slots:
 	// 3DRP Reconstruction
 	void poissonReconstruction();
 	void scaleReconstruction();
+	void advancingReconstruction();
+
+	// 3DRP Reconstruction
+	void holeFilling();
+	void booleanUnion();
 };
 
 #endif // CLOUDVIEWER_H

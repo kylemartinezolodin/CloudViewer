@@ -17,10 +17,15 @@ typedef std::pair<Point, Vector> Pwn;
 #include <CGAL/Point_set_3.h>
 typedef CGAL::Point_set_3<Point> Point_set;
 
+
+// for hole filling
+#include <CGAL/Polygon_mesh_processing/IO/polygon_mesh_io.h> // for CGAL::Polygon_mesh_processing::IO::read_polygon_mesh()
+
 // base include
 #include "CloudViewer.h"
 #include "preprocessing.h"
 #include "reconstruction.h"
+#include "postprocessing.h"
 
 #include <iostream>
 
@@ -102,7 +107,11 @@ CloudViewer::CloudViewer(QWidget *parent)
 	// 3DRP Reconstruction
 	QObject::connect(ui.actionPoisson, &QAction::triggered, this, &CloudViewer::poissonReconstruction);
 	QObject::connect(ui.actionScale_Space, &QAction::triggered, this, &CloudViewer::scaleReconstruction);
+	QObject::connect(ui.actionAdv_Face_Front, &QAction::triggered, this, &CloudViewer::advancingReconstruction);
 
+	// 3DRP Reconstruction
+	QObject::connect(ui.actionHole_Filling, &QAction::triggered, this, &CloudViewer::holeFilling);
+	QObject::connect(ui.actionBoolean_Union, &QAction::triggered, this, &CloudViewer::booleanUnion);
 	// Initialization
 	initial();
 }
@@ -197,14 +206,26 @@ void CloudViewer::open() {
 		viewer->addModelFromPolyData(inputPolyData);
 	else if (inputPolyData->GetNumberOfPoints() != 0) {
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-		pcl::io::vtkPolyDataToPointCloud(inputPolyData.GetPointer(), *cloud);
+		//pcl::io::vtkPolyDataToPointCloud(inputPolyData.GetPointer(), *cloud);
 		// QFileInfo fileInfo(file);
 		// mycloud = fileIO.load(fileInfo);
 		// mycloud.setPointColor(175, 127, 39);
 		// mycloud.viewer = viewer;
-		_3DRPHelpers::setPointColor(cloud, 175, 127, 39);
-		viewer->addPointCloud(cloud);
-		viewer->updatePointCloud(cloud);
+
+		//_3DRPHelpers::setPointColor(cloud, 175, 127, 39);
+		//viewer->addPointCloud(cloud);
+		//viewer->updatePointCloud(cloud);
+
+
+		//pcl::PointCloud<pcl::PointXYZRGB>(*xyzCloud);
+		//cloudXYZRGB = (new pcl::PointCloud<pcl::PointXYZRGB>());
+
+		cloudXYZRGB = cloud; // Di ko kahibaw mo initialize in pcl style
+		pcl::io::vtkPolyDataToPointCloud(inputPolyData.GetPointer(), *cloudXYZRGB);
+		_3DRPHelpers::setPointColor(cloudXYZRGB, 175, 127, 39);
+		viewer->addPointCloud(cloudXYZRGB);
+		viewer->updatePointCloud(cloudXYZRGB);
+
 		viewer->resetCamera();
 		ui.screen->update();
 	}
@@ -1197,9 +1218,11 @@ void CloudViewer::poissonReconstruction() {
 
 			Polyhedron output_mesh;
 
+			 //the lower the value the detailed the result (tomato_A_D14: 0.15)
 			double average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
 				(points, 6, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
-
+			//double average_spacing = 0.05;
+			//double average_spacing = 0.01;
 			if (CGAL::poisson_surface_reconstruction_delaunay
 			(points.begin(), points.end(),
 				CGAL::First_of_pair_property_map<Pwn>(),
@@ -1232,16 +1255,111 @@ void CloudViewer::scaleReconstruction() {
 		{
 			std::cerr << "Sucess: can read file " << objFilename << std::endl;
 
-			_3DRPCore::Reconstruction::scaleSpace(points);
+			Polyhedron output_mesh = _3DRPCore::Reconstruction::scaleSpace(points);
 
-			_3DRPHelpers::offConvertToObj("temp.off");
+			//_3DRPHelpers::offConvertToObj("temp.off");
 
-			scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
-			resetViewer();
-			viewer->addModelFromPolyData(scalePolyData);
+			if (CGAL::IO::write_polygon_mesh("temp.obj", output_mesh)) {
+				scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+				objectIsFrom = SCALE_SPACE;
+				resetViewer();
+				viewer->addModelFromPolyData(scalePolyData);
+			}
 
 		}
 		else
 			std::cerr << "Error: cannot read file " << objFilename << std::endl;
+	}
+}
+
+
+void CloudViewer::advancingReconstruction() {
+	std::string extension = objFilename.substr(objFilename.find_last_of('.'));
+	if (extension == ".ply" || extension == ".PLY")
+	{
+		std::vector<Point> points;
+		if (CGAL::IO::read_points(objFilename, std::back_inserter(points)))
+		{
+			std::cerr << "Sucess: can read file " << objFilename << std::endl;
+
+			Polyhedron output_mesh =  _3DRPCore::Reconstruction::advancingFaceFront(points);
+
+			if (CGAL::IO::write_polygon_mesh("temp.obj", output_mesh)) {
+				advPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+				objectIsFrom = ADVANCING_FRONT;
+				resetViewer();
+				viewer->addModelFromPolyData(advPolyData);
+			}
+		}
+		else
+			std::cerr << "Error: cannot read file " << objFilename << std::endl;
+	}
+}
+
+// ToDo: hole fill the bunny10k(scale space) then export, checkout the result. check if it is a manifold, if not then look for something to solve it.
+void CloudViewer::holeFilling() {
+	// pre-condition: the object must be a mesh (added, reonstructed)
+	if (objectIsFrom == SCALE_SPACE)
+		_3DRPHelpers::vtkSaveSTL("temp.stl", scalePolyData, true);
+	else if (objectIsFrom == ADVANCING_FRONT)
+		_3DRPHelpers::vtkSaveSTL("temp.stl", advPolyData, true);
+	else
+		_3DRPHelpers::vtkSaveSTL("temp.stl", inputPolyData, true);
+
+
+	Polyhedron poly;
+	if (CGAL::Polygon_mesh_processing::IO::read_polygon_mesh("temp.stl", poly)) {
+		int holes_fixed = _3DRPCore::Postprocessing::holeFilling(poly);
+
+		if (CGAL::IO::write_polygon_mesh("temp.obj", poly)) {
+			
+			if (objectIsFrom == SCALE_SPACE) {
+				scalePolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+				resetViewer();
+				viewer->addModelFromPolyData(scalePolyData);
+			}
+			else if (objectIsFrom == ADVANCING_FRONT) {
+				advPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+				resetViewer();
+				viewer->addModelFromPolyData(advPolyData);
+			}
+			else {
+				inputPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+				resetViewer();
+				viewer->addModelFromPolyData(inputPolyData);
+			}
+
+		}
+		std::cout << holes_fixed << " holes have been filled" << std::endl;
+	}
+	else
+		std::cerr << "Invalid input." << std::endl;
+
+
+
+}
+
+
+void CloudViewer::booleanUnion() {
+	// pre-condition: poisson and another reconstruction has been executed
+	if (poissonPolyData != NULL) {
+		_3DRPHelpers::vtkSaveSTL("temp.stl", poissonPolyData, true);
+		Polyhedron poissonMesh;
+		CGAL::Polygon_mesh_processing::IO::read_polygon_mesh("temp.stl", poissonMesh);
+
+		_3DRPHelpers::vtkSaveSTL("temp.stl", scalePolyData, true);
+		Polyhedron scaleMesh;
+		CGAL::Polygon_mesh_processing::IO::read_polygon_mesh("temp.stl", scaleMesh);
+
+		Polyhedron outputMesh;
+		if (!_3DRPCore::Postprocessing::booleanUnion(poissonMesh, scaleMesh, outputMesh))
+			std::cerr << "Boolean Operation Failed";
+
+		if (CGAL::IO::write_polygon_mesh("temp.obj", outputMesh)) {
+			inputPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+			resetViewer();
+			viewer->addModelFromPolyData(inputPolyData);
+		}
+
 	}
 }

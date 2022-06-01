@@ -28,6 +28,7 @@
 #include "MeshProcessing.h"
 #include "FileIO.h"
 #include "helpers.h"
+#include "poissondialog.h"
 
 #include <vector>
 #include <map>
@@ -85,6 +86,7 @@ public:
 
 private:
 	Ui::CloudViewerClass ui;
+	PoissonDialog* poissonDialog;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloudXYZRGB;
@@ -207,6 +209,9 @@ public slots:
 	// 3DRP Reconstruction
 	void holeFilling();
 	void booleanUnion();
+
+	void quickPoisson();
+	void quickHybrid();
 };
 
 #endif // CLOUDVIEWER_H

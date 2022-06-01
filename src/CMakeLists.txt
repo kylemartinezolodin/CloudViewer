@@ -25,14 +25,14 @@ file(GLOB_RECURSE DIR_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 file(GLOB_RECURSE DIR_UIS     ${CMAKE_CURRENT_SOURCE_DIR}/*.ui)
 
 # add resource
-set(RESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/CloudViewer.qrc)
-qt5_add_resources(RESOURCE_ADDED ${RESOURCE})
+#set(RESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/CloudViewer.qrc)
+#qt5_add_resources(RESOURCE_ADDED ${RESOURCE})
 
 add_executable(${PROJECT_NAME}
     ${DIR_SRCS}
     ${DIR_HEADERS}
     ${DIR_UIS}
-    ${RESOURCE_ADDED}
+#    ${RESOURCE_ADDED}
 )
 
 target_link_libraries(${PROJECT_NAME}

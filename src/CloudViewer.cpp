@@ -112,8 +112,15 @@ CloudViewer::CloudViewer(QWidget *parent)
 	// 3DRP Reconstruction
 	QObject::connect(ui.actionHole_Filling, &QAction::triggered, this, &CloudViewer::holeFilling);
 	QObject::connect(ui.actionBoolean_Union, &QAction::triggered, this, &CloudViewer::booleanUnion);
+
+	QObject::connect(ui.actionPoisson_Reconstruction, &QAction::triggered, this, &CloudViewer::quickPoisson);
+	
+	QObject::connect(ui.actionHybrid_Poisson_Reconstruction, &QAction::triggered, this, &CloudViewer::quickHybrid);
+
 	// Initialization
 	initial();
+
+	qApp->setStyleSheet(windows_qss);
 }
 
 CloudViewer::~CloudViewer() {
@@ -1216,27 +1223,59 @@ void CloudViewer::poissonReconstruction() {
 		{
 			std::cerr << "Sucess: can read file " << objFilename << std::endl;
 
-			Polyhedron output_mesh;
+			// Show dialog
+			PoissonDialog w;
+			poissonDialog = &w;
+			poissonDialog->setModal(true);
 
-			 //the lower the value the detailed the result (tomato_A_D14: 0.15)
-			double average_spacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
-				(points, 6, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
-			//double average_spacing = 0.05;
-			//double average_spacing = 0.01;
-			if (CGAL::poisson_surface_reconstruction_delaunay
-			(points.begin(), points.end(),
-				CGAL::First_of_pair_property_map<Pwn>(),
-				CGAL::Second_of_pair_property_map<Pwn>(),
-				output_mesh, average_spacing))
-			{
-				if (CGAL::IO::write_polygon_mesh("temp.obj", output_mesh)) {
-					poissonPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
-					resetViewer();
-					viewer->addModelFromPolyData(poissonPolyData);
+			if (poissonDialog->exec() == QDialog::Accepted) { // if ok is pressed
+				CGAL::Timer task_timer; task_timer.start();
+
+				int spacingIndx; // 0 for auto, 1 for manual
+				int sampleNeighbors;
+				double manualSpacing;
+				double facetAngle;
+				double radius;
+				double distance;
+
+				poissonDialog->uiValues(spacingIndx, sampleNeighbors, manualSpacing, facetAngle, radius, distance);
+				//std::cerr << spacingIndx << std::endl << sampleNeighbors << std::endl << manualSpacing << std::endl << facetAngle << std::endl << radius << std::endl << distance << std::endl;
+
+				Polyhedron output_mesh;
+
+				if (spacingIndx == 0) {
+					//the lower the value the detailed the result 
+					// computed spacing (bunny): 0.0027
+					// computed spacing (tomato_A_D14): 0.15
+					manualSpacing = CGAL::compute_average_spacing<CGAL::Sequential_tag>
+						(points, sampleNeighbors, CGAL::parameters::point_map(CGAL::First_of_pair_property_map<Pwn>()));
 				}
-				else
-					std::cerr << "Error: cannot write file " << objFilename << std::endl;
+
+				if (CGAL::poisson_surface_reconstruction_delaunay
+				(points.begin(), points.end(),
+					CGAL::First_of_pair_property_map<Pwn>(),
+					CGAL::Second_of_pair_property_map<Pwn>(),
+					output_mesh, manualSpacing, facetAngle, radius, distance)
+					) {
+					if (CGAL::IO::write_polygon_mesh("temp.obj", output_mesh)) {
+						poissonPolyData = _3DRPHelpers::ReadPolyData(std::string("temp.obj").c_str());
+						resetViewer();
+						viewer->addModelFromPolyData(poissonPolyData);
+
+						string s = "Poisson Reconstruction Successfull \n"
+							"Elapsed Time: " +std::to_string(task_timer.time()) +" seconds \n"
+							"Spacing: " +std::to_string(manualSpacing) +"\n"
+							"Mesh Vertices : " +std::to_string(output_mesh.size_of_vertices()) +"\n"
+							"Mesh Faces: " +std::to_string(output_mesh.size_of_facets()) +"\n";
+						QMessageBox msgBox;
+						msgBox.setText(toQString(s));
+						msgBox.exec();
+					}
+					else
+						std::cerr << "Error: cannot write file " << objFilename << std::endl;
+				}
 			}
+
 
 		}
 		else
@@ -1362,4 +1401,33 @@ void CloudViewer::booleanUnion() {
 		}
 
 	}
+}
+
+void CloudViewer::quickPoisson() {
+	PoissonDialog w;
+	poissonDialog = &w;
+	poissonDialog->setModal(true);
+
+	if (poissonDialog->exec() == QDialog::Accepted) {
+		//double *values;
+		//values = poissonDialog->getAllWidgetsValues();
+		//std::cerr << *(values + 0) << std::endl << *(values + 1) << std::endl << *(values + 2) << std::endl << *(values + 3) << std::endl;
+		//std::vector<double> values;
+		//values = poissonDialog->getAllWidgetsValues();
+		//std::cerr << values[0] << std::endl << values[1] << std::endl;
+
+		int spacingIndx; // 0 for auto, 1 for manual
+		int sampleNeighbors;
+		double manualSpacing;
+		double facetAngle;
+		double radius;
+		double distance;
+
+		poissonDialog->uiValues(spacingIndx, sampleNeighbors, manualSpacing, facetAngle, radius, distance);
+		std::cerr << spacingIndx << std::endl << sampleNeighbors << std::endl;
+	}
+}
+
+void CloudViewer::quickHybrid() {
+
 }
